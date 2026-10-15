@@ -1,95 +1,85 @@
 # 🌱 GardenPlanner AI — Hacktoberfest 2026
 
-> 参赛项目：**Hacktoberfest 2026 Open-Source AI Challenge**（DEV 平台，每周一期，共 5 周，$2,450 奖金池 / 17 位获奖者）。
-> 主题方向：**Touch Grass** —— 用**开源 / 开放权重（open-weight）**模型，帮人离开屏幕、走进自然。
+[![CI](https://github.com/Zhiyilang/hacktoberfest-2026-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/Zhiyilang/hacktoberfest-2026-ai/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 
-## 这是什么
+> Entry for the **Hacktoberfest 2026 Open-Source AI Challenge** (DEV, weekly, 5 weeks, $2,450 pool / 17 winners).
+> Theme: **Touch Grass** — use open-weight models to help people step away from screens and into nature.
 
-一个**完全本地离线运行**的园艺规划命令行工具。输入你所在的城市、种植空间和难度偏好，它根据内置的农艺知识库，给出「这个月该种什么、和谁种在一起、避开谁、注意什么病虫害、当月该做什么」的实用计划。
+**中文说明见 [README.zh.md](README.zh.md)。**
 
-- **核心推理默认用内置规则引擎**（零依赖、零网络、零账号），开箱即用。
-- 内置**伴生矩阵（friends）**与**相克矩阵（foes）**，并附**病虫害贴士（pests）**与**当月任务清单**。
-- **可选接入本地 Ollama 开放权重模型**，把计划改写成更口语的自然语言建议——这体现了本项目的「open-weight 为核心」主张。
-- 你的位置、花园数据**不离开本机**，隐私可控；技术栈**纯 Python 标准库**，零成本。
+## What is this
 
-## 为什么是「开源创新 / Touch Grass」
+An **offline-first gardening planner CLI**. Tell it your city, growing space, and skill level; it returns a monthly plan from a built-in agronomy knowledge base: *what to sow now, what to plant next to it, what to keep apart, which pests to watch, and what chores the month demands*.
 
-- **让人放下屏幕**：输出是一份要去户外动手的种植清单，而不是又一个让人刷屏的 App。
-- **开放权重优先**：模型可本地替换（Ollama / GGUF），Agent 行为完全由你掌控，不绑定任何闭源商业 API。
-- **零云端依赖**：断网也能跑，适合阳台、庭院、社区花园等真实场景。
+- **Rule engine by default** — zero dependencies, zero network, zero accounts. Works out of the box.
+- Built-in **companion (friends) / antagonistic (foes)** matrices, plus **pest tips** and a **monthly task checklist**.
+- **Optional local Ollama open-weight model** rewrites the plan in friendly plain language — the project's core claim is *open-weight first*: swap the model locally, no closed-source API lock-in.
+- Your location and garden data **never leave your machine**. Pure Python standard library, zero cost.
 
-## 快速开始
+## Why it fits "Touch Grass"
+
+- **Gets you off the screen**: the output is a hands-on planting checklist you act on outdoors, not another feed to scroll.
+- **Open-weight first**: model is locally replaceable (Ollama / GGUF); behavior is fully under your control.
+- **No cloud dependency**: runs disconnected — balcony, backyard, or community garden.
+
+## Quick start
 
 ```bash
-# 需要 Python 3.10+
+# Python 3.10+
 python main.py --city "Shanghai" --month 10 --space balcony --level easy
 ```
 
-可选参数：
-
-| 参数 | 说明 | 默认 |
+| Flag | Meaning | Default |
 |---|---|---|
-| `--city` | 城市（内置气候参考，如 Shanghai/London/Sydney） | Shanghai |
-| `--month` | 月份 1-12 | 当前月 |
+| `--city` | city with built-in climate reference (Shanghai/London/Sydney/...) | Shanghai |
+| `--month` | month 1-12 | current month |
 | `--space` | `balcony` / `garden` / `indoor` / `any` | any |
 | `--level` | `easy` / `medium` / `hard` / `any` | any |
-| `--ollama MODEL` | 可选：本地 Ollama 模型名，做自然语言增强 | 关闭 |
+| `--ollama MODEL` | optional local Ollama model for plain-language rewrite | off |
 
-示例输出：
+Sample output (truncated):
 
 ```
-🌱 Shanghai · 第 10 月（中秋）
-   气候带 ~8 / 北半球
+🌱 Shanghai · Month 10 (Mid-Autumn)
+   Hardiness zone ~8 / Northern Hemisphere
 
-   推荐播种 / 栽植（5 项）：
-   • 生菜 ［easy｜balcony］
-     搭档(伴生): 胡萝卜、草莓、葱蒜
-     相克(避免相邻): 芹菜
-     贴士: 速生叶菜，凉爽季节品质最佳。
-     病虫害: 蚜虫用黄板诱捕；高湿易烂心，控水通风。
-   • 菠菜 ［easy｜balcony］
-     搭档(伴生): 草莓、豌豆、生菜
-     相克(避免相邻): 甜菜
-     贴士: 耐寒，秋播越冬，早春采收。
-     病虫害: 潜叶蝇挂黄板；霜霉病选抗病种、避免密植。
-   • 大蒜 ［easy｜balcony］
-     搭档(伴生): 草莓、番茄、几乎所有蔬菜
-     相克(避免相邻): 豆类、豌豆
-     贴士: 秋播越冬，天然抑菌，几乎零维护。
-     病虫害: 几乎无；轮作防土传病害。
-   • 香菜 ［easy｜balcony］
-     搭档(伴生): 菠菜、生菜
-     相克(避免相邻): 胡萝卜、茴香
-     贴士: 耐寒香草，高温易抽薹。
-     病虫害: 蚜虫黄板；抽薹即老，勤采嫩叶。
-   • 豆芽 ［easy｜indoor］
-     搭档(伴生): —
-     相克(避免相邻): —
-     贴士: 全年室内水培，3-5 天即可采收，零门槛。
-     病虫害: 无土栽培避免污染；每日换水防黏滑。
-
-   📋 当月任务清单：
-     ☐ 秋植大蒜/小麦
-     ☐ 采收晚熟作物
-     ☑ 覆盖越冬 mulch
+   Recommended sowing / planting (5):
+   • Lettuce ［easy｜balcony］
+     Companions: carrot, strawberry, alliums
+     Avoid nearby: celery
+     Tip: fast leafy green, best in cool seasons.
+     Pests: yellow sticky traps for aphids; control water in high humidity.
+   ...
+   📋 Monthly task checklist:
+     ☐ Plant autumn garlic/wheat
+     ☐ Harvest late-season crops
+     ☑ Mulch for winter
 ```
 
-南半球城市（如 Sydney）会自动翻转季节：输入 4 月会得到北半球 10 月的秋播计划。
+Southern-hemisphere cities (e.g. Sydney) flip the seasons automatically: month 4 yields the northern-hemisphere month-10 autumn sowing plan.
 
-## 用本地开放权重模型增强（可选）
+## Tests & quality
 
 ```bash
-# 先本地装好 Ollama 并拉一个模型，例如：
+python eval.py   # 29 assertions: hemisphere maths, plan determinism,
+                 # data integrity, real-subprocess CLI
+```
+
+CI runs the same suite on Python 3.10 / 3.11 / 3.12 (`.github/workflows/ci.yml`).
+
+## Optional: enhance with a local open-weight model
+
+```bash
 ollama pull llama3.2
-# 再让工具用模型改写计划：
 python main.py --city "London" --month 3 --ollama llama3.2
 ```
 
-没有 Ollama 也完全不影响使用——规则引擎会直接输出完整计划。
+Without Ollama nothing breaks — the rule engine emits the complete plan.
 
-## 参与 Hacktoberfest / 贡献
+## Hacktoberfest contributions
 
-欢迎提交 PR：补充更多城市气候数据、扩展植物知识库、增加病虫害提醒、做 Web/移动端封装等。
-所有贡献遵循 Hacktoberfest 的 `hacktoberfest-accepted` 标签约定。
+PRs welcome: more city climate data, an expanded plant database, pest reminders, web/mobile wrappers. Follow the `hacktoberfest-accepted` label convention.
 
-> 许可证：MIT（开源）
+> License: MIT
