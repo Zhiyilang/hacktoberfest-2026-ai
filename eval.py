@@ -27,6 +27,29 @@ import urllib.request
 from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+def runpy(args, **kw):
+    """Run a child interpreter over a deterministic UTF-8 pipe.
+
+    Without this, the suite crashes on a cp936 Windows locale: the child
+    emits UTF-8 bytes while the parent's reader thread decodes with the
+    locale codec, the reader dies with UnicodeDecodeError, and stdout
+    silently becomes None -- surfacing later as a confusing TypeError.
+    """
+    import os
+    env = dict(os.environ)
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+    kw.setdefault("capture_output", True)
+    kw.setdefault("text", True)
+    kw.setdefault("encoding", "utf-8")
+    kw.setdefault("errors", "replace")
+    kw.setdefault("timeout", 180)
+    kw.setdefault("cwd", HERE)
+    kw.setdefault("env", env)
+    return subprocess.run([sys.executable] + list(args), **kw)
+
+
 sys.path.insert(0, HERE)
 
 import main as GP  # noqa: E402
@@ -190,8 +213,7 @@ class TestOllamaEnhancement(unittest.TestCase):
 
 class TestCLI(unittest.TestCase):
     def test_cli_runs_real_subprocess(self):
-        proc = subprocess.run(
-            [PY, os.path.join(HERE, "main.py"),
+        proc = runpy([os.path.join(HERE, "main.py"),
              "--city", "Shanghai", "--month", "10",
              "--space", "balcony", "--level", "easy"],
             capture_output=True, text=True, timeout=30)
@@ -201,23 +223,20 @@ class TestCLI(unittest.TestCase):
         self.assertIn("当月任务清单", proc.stdout)
 
     def test_cli_invalid_month_exits_2(self):
-        proc = subprocess.run(
-            [PY, os.path.join(HERE, "main.py"), "--month", "13"],
+        proc = runpy([os.path.join(HERE, "main.py"), "--month", "13"],
             capture_output=True, text=True, timeout=30)
         self.assertEqual(proc.returncode, 2)
         self.assertIn("月份", proc.stderr)
 
     def test_cli_unknown_city_still_succeeds(self):
-        proc = subprocess.run(
-            [PY, os.path.join(HERE, "main.py"),
+        proc = runpy([os.path.join(HERE, "main.py"),
              "--city", "Atlantis", "--month", "5"],
             capture_output=True, text=True, timeout=30)
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("Atlantis", proc.stdout)
 
     def test_cli_southern_flip(self):
-        proc = subprocess.run(
-            [PY, os.path.join(HERE, "main.py"),
+        proc = runpy([os.path.join(HERE, "main.py"),
              "--city", "Sydney", "--month", "4", "--space", "balcony"],
             capture_output=True, text=True, timeout=30)
         self.assertEqual(proc.returncode, 0, proc.stderr)
