@@ -177,6 +177,34 @@ def render(plan: dict) -> str:
     return "\n".join(lines)
 
 
+def render_en(en: dict) -> str:
+    """Render the English plan produced by ``i18n.en_plan()`` (mirrors render())."""
+    labels = en["labels"]
+    lines = []
+    lines.append(f"🌱 {en['city']} · month {en['target_month']} ({en['season']})")
+    zone_note = f" ({en['city_note']})" if en.get("city_note") else ""
+    lines.append(f"   Hardiness zone ~{en['zone']} / {en['hemisphere']}{zone_note}")
+    lines.append("")
+    picks = en["picks"]
+    if not picks:
+        lines.append(f"   {labels['no_picks']}")
+    else:
+        lines.append(f"   {labels['recommended']} ({len(picks)}):")
+        for p in picks:
+            comp = ", ".join(p["companions"]) if p["companions"] else "—"
+            foes = ", ".join(p["foes"]) if p["foes"] else "—"
+            lines.append(f"   • {p['name']}  [{p['level']} | {p['space']}]")
+            lines.append(f"     {labels['companions']}: {comp}")
+            lines.append(f"     {labels['foes']}: {foes}")
+            lines.append(f"     {labels['tip']}: {p['tip']}")
+            lines.append(f"     {labels['pests']}: {p['pests']}")
+    lines.append("")
+    lines.append(f"   📋 {labels['tasks']}:")
+    for t in en["tasks"]:
+        lines.append(f"     ☐ {t}")
+    return "\n".join(lines)
+
+
 def maybe_enhance_with_model(plan_text: str, model: str) -> str:
     """可选：用本地 Ollama 开放权重模型把计划改写成自然语言。无模型则原样返回。"""
     if not shutil.which("ollama"):
@@ -207,6 +235,8 @@ def main() -> int:
                    help="难度过滤，默认 any")
     p.add_argument("--ollama", metavar="MODEL", default=None,
                    help="可选：本地 Ollama 模型名（如 llama3.2），做自然语言增强")
+    p.add_argument("--lang", default="zh", choices=["zh", "en"],
+                   help="输出语言 / output language (default: zh)")
     args = p.parse_args()
 
     if not 1 <= args.month <= 12:
@@ -214,7 +244,11 @@ def main() -> int:
         return 2
 
     plan = build_plan(args.city, args.month, args.space, args.level)
-    text = render(plan)
+    if args.lang == "en":
+        import i18n  # lazy: i18n imports main, so import at call time to avoid a cycle
+        text = render_en(i18n.en_plan(plan))
+    else:
+        text = render(plan)
     if args.ollama:
         text = maybe_enhance_with_model(text, args.ollama)
     print(text)
