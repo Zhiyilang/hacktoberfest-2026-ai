@@ -186,6 +186,7 @@ def maybe_enhance_with_model(plan_text: str, model: str) -> str:
             ["ollama", "run", model,
              "把下面的园艺计划用亲切的口语改写给新手看：\n" + plan_text],
             capture_output=True, text=True, timeout=60,
+            encoding="utf-8", errors="replace",
         )
         return proc.stdout.strip() or plan_text
     except Exception:
