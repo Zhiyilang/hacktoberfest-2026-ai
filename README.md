@@ -60,11 +60,27 @@ Sample output (truncated):
 
 Southern-hemisphere cities (e.g. Sydney) flip the seasons automatically: month 4 yields the northern-hemisphere month-10 autumn sowing plan.
 
+## Hosted demo (web)
+
+A zero-dependency web UI (pure standard library) ships alongside the CLI:
+
+```bash
+python app.py            # reads PORT (default 10000), binds 0.0.0.0
+```
+
+- English-first UI with a 中文 toggle; the plan renders as cards
+  (companions / keep-apart / tip / pests) plus the monthly checklist.
+- One-click deploy via `render.yaml` (Render Blueprint, free plan).
+- The CLI remains the primary interface; the web layer is presentation
+  only — the knowledge base lives in `main.py` and the English map in
+  `i18n.py`.
+
 ## Tests & quality
 
 ```bash
-python eval.py   # 29 assertions: hemisphere maths, plan determinism,
-                 # data integrity, real-subprocess CLI
+python eval.py   # 43 assertions: hemisphere maths, plan determinism,
+                 # data integrity, English-layer coverage, real-subprocess
+                 # CLI, and real-HTTP web endpoint round-trips
 ```
 
 CI runs the same suite on Python 3.10 / 3.11 / 3.12 (`.github/workflows/ci.yml`).
