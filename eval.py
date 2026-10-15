@@ -243,6 +243,24 @@ class TestCLI(unittest.TestCase):
         self.assertIn("南半球", proc.stdout)
         self.assertIn("第 10 月", proc.stdout)
 
+    def test_cli_lang_en_outputs_english(self):
+        proc = runpy([os.path.join(HERE, "main.py"),
+             "--city", "Shanghai", "--month", "10", "--lang", "en"],
+            capture_output=True, text=True, timeout=30)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("Recommended sowing / planting", proc.stdout)
+        self.assertIn("Companions", proc.stdout)
+        # English mode must carry no CJK characters (decorative emoji are fine).
+        self.assertFalse(any("\u4e00" <= ch <= "\u9fff" for ch in proc.stdout),
+                         "unexpected CJK in --lang en output:\n" + proc.stdout)
+
+    def test_cli_lang_defaults_to_zh(self):
+        proc = runpy([os.path.join(HERE, "main.py"),
+             "--city", "Shanghai", "--month", "10"],
+            capture_output=True, text=True, timeout=30)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("当月任务清单", proc.stdout)
+
 
 class TestI18n(unittest.TestCase):
     """The English layer must cover the whole knowledge base — no drift."""
