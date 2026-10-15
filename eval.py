@@ -9,21 +9,29 @@ Covers:
 - render() output contract
 - Ollama enhancement path: absent binary -> passthrough (monkeypatched)
 - CLI end-to-end via real subprocess, incl. invalid-month exit code
+- English knowledge layer (i18n.py): full coverage, no drift from main.py
+- web demo (app.py): real in-thread HTTP server, real urllib round-trips
 """
 from __future__ import annotations
 
 import datetime as _dt
 import io
+import json
 import os
 import subprocess
 import sys
+import threading
 import unittest
+import urllib.error
+import urllib.request
 from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import main as GP  # noqa: E402
+import i18n as I18N  # noqa: E402
+import app as app_mod  # noqa: E402
 
 PY = sys.executable
 
@@ -215,6 +223,130 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("南半球", proc.stdout)
         self.assertIn("第 10 月", proc.stdout)
+
+
+class TestI18n(unittest.TestCase):
+    """The English layer must cover the whole knowledge base — no drift."""
+
+    def test_every_plant_has_english_name_tip_pest(self):
+        for p in GP.PLANTS:
+            self.assertIn(p["name"], I18N.EN_PLANT, p["name"])
+            self.assertIn(p["name"], I18N.EN_TIPS, p["name"])
+            self.assertIn(p["name"], I18N.EN_PESTS, p["name"])
+
+    def test_every_companion_token_maps(self):
+        for p in GP.PLANTS:
+            for token in list(p["friends"]) + list(p["foes"]):
+                self.assertIn(token.strip(), I18N.EN_COMPANION, token)
+
+    def test_every_month_has_english_tasks(self):
+        for m in range(1, 13):
+            tasks = I18N.EN_TASKS.get(m)
+            self.assertIsInstance(tasks, list, m)
+            self.assertEqual(len(tasks), 3, m)
+            for t in tasks:
+                self.assertTrue(t.strip())
+
+    def test_en_plan_matches_zh_pick_counts(self):
+        for city, month, space, level in [
+            ("Shanghai", 10, "balcony", "easy"), ("London", 3, "garden", "any"),
+            ("Sydney", 4, "any", "any"), ("Tokyo", 8, "indoor", "any"),
+            ("Nowhere", 6, "any", "medium"),
+        ]:
+            zh = GP.build_plan(city, month, space, level)
+            en = I18N.en_plan(zh)
+            self.assertEqual(len(en["picks"]), len(zh["picks"]), city)
+            self.assertEqual(len(en["tasks"]), len(zh["tasks"]), city)
+            for p in en["picks"]:
+                self.assertTrue(p["name"].strip())
+                self.assertTrue(p["tip"].strip())
+                self.assertTrue(p["pests"].strip())
+
+    def test_en_plan_marks_unknown_city(self):
+        en = I18N.en_plan(GP.build_plan("Atlantis", 5, "any", "any"))
+        self.assertTrue(en["city_note"])
+        en2 = I18N.en_plan(GP.build_plan("Shanghai", 5, "any", "any"))
+        self.assertEqual(en2["city_note"], "")
+
+    def test_en_plan_southern_hemisphere_label(self):
+        en = I18N.en_plan(GP.build_plan("Sydney", 10, "any", "any"))
+        self.assertTrue(en["southern"])
+        self.assertIn("Southern", en["hemisphere"])
+
+
+class TestWebEndpoints(unittest.TestCase):
+    """Real HTTP round-trips against the stdlib demo server (in-thread)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.srv = app_mod.make_server(0, "127.0.0.1")
+        cls.port = cls.srv.server_address[1]
+        cls.thread = threading.Thread(target=cls.srv.serve_forever, daemon=True)
+        cls.thread.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.srv.shutdown()
+        cls.srv.server_close()
+
+    def _get(self, path):
+        with urllib.request.urlopen("http://127.0.0.1:%d%s" % (self.port, path),
+                                    timeout=10) as r:
+            return r.status, r.read()
+
+    def test_healthz(self):
+        status, body = self._get("/healthz")
+        self.assertEqual(status, 200)
+        d = json.loads(body)
+        self.assertTrue(d["ok"])
+
+    def test_index_html_served(self):
+        status, body = self._get("/")
+        self.assertEqual(status, 200)
+        html = body.decode("utf-8")
+        self.assertIn("GardenPlanner", html)
+        self.assertIn("/api/plan", html)
+
+    def test_api_plan_en(self):
+        status, body = self._get("/api/plan?city=Shanghai&month=10&space=balcony&level=easy&lang=en")
+        self.assertEqual(status, 200)
+        d = json.loads(body)
+        self.assertTrue(d["ok"])
+        self.assertEqual(d["lang"], "en")
+        plan = d["plan"]
+        self.assertGreater(len(plan["picks"]), 0)
+        self.assertEqual(len(plan["tasks"]), 3)
+        first = plan["picks"][0]
+        self.assertTrue(first["name"].strip())
+        self.assertTrue(first["tip"].strip())
+
+    def test_api_plan_zh_returns_text(self):
+        status, body = self._get("/api/plan?city=Shanghai&month=10&space=balcony&lang=zh")
+        d = json.loads(body)
+        self.assertEqual(d["lang"], "zh")
+        self.assertIn("🌱", d["text"])
+
+    def test_api_plan_unknown_city_falls_back(self):
+        status, body = self._get("/api/plan?city=Atlantis&month=5&lang=en")
+        d = json.loads(body)
+        self.assertTrue(d["ok"])
+        self.assertTrue(d["plan"]["city_note"])
+        self.assertEqual(d["plan"]["zone"], 8)
+
+    def test_api_plan_invalid_month_400(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            self._get("/api/plan?month=13")
+        self.assertEqual(ctx.exception.code, 400)
+
+    def test_api_plan_invalid_space_400(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            self._get("/api/plan?space=rooftop")
+        self.assertEqual(ctx.exception.code, 400)
+
+    def test_unknown_route_404(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            self._get("/nope")
+        self.assertEqual(ctx.exception.code, 404)
 
 
 if __name__ == "__main__":
