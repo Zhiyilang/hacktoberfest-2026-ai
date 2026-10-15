@@ -76,10 +76,23 @@ python main.py --city "Shanghai" --month 10 --space balcony --level easy
 
 南半球城市（如 Sydney）会自动翻转季节：输入 4 月会得到北半球 10 月的秋播计划。
 
+## 在线演示（Web）
+
+除 CLI 外还附带一个零依赖 Web 界面（纯标准库实现）：
+
+```bash
+python app.py            # 读取 PORT（默认 10000），绑定 0.0.0.0
+```
+
+- 英文优先界面，可一键切换中文；计划以卡片呈现（伴生 / 相克 / 贴士 / 病虫害）+ 当月任务清单。
+- `render.yaml` 支持 Render 一键部署（免费档）。
+- CLI 仍是主界面；Web 层只做展示——知识库在 `main.py`，英文映射在 `i18n.py`。
+
 ## 测试与质量
 
 ```bash
-python eval.py   # 29 个断言：半球翻转数学 / 计划确定性 / 数据完整性 / CLI 真子进程
+python eval.py   # 43 个断言：半球翻转数学 / 计划确定性 / 数据完整性 /
+                 # 英文层全覆盖 / CLI 真子进程 / Web 端点真实 HTTP 往返
 ```
 
 CI 在 Python 3.10 / 3.11 / 3.12 三个版本上跑同一套断言（见 `.github/workflows/ci.yml`）。
