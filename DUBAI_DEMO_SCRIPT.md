@@ -1,6 +1,8 @@
 # GardenPlanner AI — Dubai Demo Video Storyboard (3:00, English)
 ## Create AI Agents Championship · Best Personal AI Agent
 
+**Rendered video:** `gardenplanner_demo.mp4` (repo root) — the English CLI (`main.py --lang en`) planning a Shanghai October, the month's checklist, and `python eval.py` (45/45). Drop it into the submission; add a voiceover to the storyboard below if you want to submit the narrated version instead.
+
 Format: screen recording (terminal + hosted web UI) with voiceover.
 Total target: 2:50–3:00. Record at 1080p, terminal font ≥ 14pt.
 No background music over the voiceover; keep room tone clean.
