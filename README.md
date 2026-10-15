@@ -29,6 +29,7 @@ An **offline-first gardening planner CLI**. Tell it your city, growing space, an
 ```bash
 # Python 3.10+
 python main.py --city "Shanghai" --month 10 --space balcony --level easy
+python main.py --city "London" --month 3 --lang en   # English output
 ```
 
 | Flag | Meaning | Default |
@@ -38,6 +39,7 @@ python main.py --city "Shanghai" --month 10 --space balcony --level easy
 | `--space` | `balcony` / `garden` / `indoor` / `any` | any |
 | `--level` | `easy` / `medium` / `hard` / `any` | any |
 | `--ollama MODEL` | optional local Ollama model for plain-language rewrite | off |
+| `--lang` | output language: `zh` / `en` | zh |
 
 Sample output (truncated):
 
