@@ -387,4 +387,8 @@ class TestWebEndpoints(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2)
+    suite = unittest.TestLoader().loadTestsFromModule(sys.modules["__main__"])
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    failed = len(result.failures) + len(result.errors)
+    print("\nRESULT: %d passed, %d failed" % (result.testsRun - failed, failed))
+    sys.exit(0 if result.wasSuccessful() else 1)
