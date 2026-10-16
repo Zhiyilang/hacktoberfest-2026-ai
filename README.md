@@ -80,7 +80,7 @@ python app.py            # reads PORT (default 10000), binds 0.0.0.0
 ## Tests & quality
 
 ```bash
-python eval.py   # 43 assertions: hemisphere maths, plan determinism,
+python eval.py   # 45 assertions: hemisphere maths, plan determinism,
                  # data integrity, English-layer coverage, real-subprocess
                  # CLI, and real-HTTP web endpoint round-trips
 ```
